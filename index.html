@@ -13,9 +13,11 @@
     <div class="anmeldung-karte">
       <h1>Kanzlei Doehring</h1>
       <p>Zeiterfassung und Tätigkeitsnachweis</p>
-      <label for="anmeldung-passwort">Bitte geben Sie das Passwort ein</label>
-      <input type="password" id="anmeldung-passwort" autocomplete="current-password">
-      <button type="button" class="knopf knopf-haupt knopf-gross" id="knopf-anmelden">Anmelden</button>
+      <form id="anmeldung-formular">
+        <label for="anmeldung-passwort">Bitte geben Sie das Passwort ein</label>
+        <input type="password" id="anmeldung-passwort" autocomplete="current-password">
+        <button type="submit" class="knopf knopf-haupt knopf-gross" id="knopf-anmelden">Anmelden</button>
+      </form>
       <p class="fehlermeldung" id="anmeldung-fehler" hidden></p>
     </div>
   </div>

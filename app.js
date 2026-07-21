@@ -977,7 +977,8 @@ function anwendungFreigeben() {
 }
 
 async function anmelden() {
-  const eingabe = el('anmeldung-passwort').value;
+  // Versehentliche Leerzeichen (z. B. durch Autovervollständigung) ignorieren
+  const eingabe = el('anmeldung-passwort').value.trim();
   const fehlerFeld = el('anmeldung-fehler');
   const pruefsumme = await passwortPruefsumme(eingabe);
   if (pruefsumme === await gespeichertePruefsumme()) {
@@ -1023,9 +1024,10 @@ async function passwortAendern() {
 }
 
 function passwortschutzStarten() {
-  el('knopf-anmelden').addEventListener('click', anmelden);
-  el('anmeldung-passwort').addEventListener('keydown', function (ereignis) {
-    if (ereignis.key === 'Enter') anmelden();
+  // Formular-Absenden deckt Klick auf "Anmelden" und die Eingabetaste ab
+  el('anmeldung-formular').addEventListener('submit', function (ereignis) {
+    ereignis.preventDefault();
+    anmelden();
   });
   el('knopf-passwort-aendern').addEventListener('click', passwortAendern);
 
