@@ -1,0 +1,416 @@
+/* =====================================================================
+   Kanzlei Doehring – Zeiterfassung und Tätigkeitsnachweis
+   Gestaltung: hell, seriös, gut lesbar, große Bedienelemente.
+   ===================================================================== */
+
+:root {
+  --farbe-hintergrund: #f6f5f2;   /* sehr helles Beige */
+  --farbe-karte: #ffffff;
+  --farbe-text: #1c2430;          /* sehr dunkles Blaugrau */
+  --farbe-text-gedaempft: #5a6472;
+  --farbe-rahmen: #d4d0c8;
+  --farbe-akzent: #2c4a6e;        /* dezentes, seriöses Dunkelblau */
+  --farbe-akzent-hell: #eef2f7;
+  --farbe-gefahr: #9c2b2b;
+  --farbe-fehler-hintergrund: #fbeaea;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 17px; }
+
+body {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  line-height: 1.5;
+}
+
+/* ---------- Kopfbereich ---------- */
+.app-header {
+  background: var(--farbe-karte);
+  border-bottom: 3px solid var(--farbe-akzent);
+  padding: 1.2rem 2rem 0.8rem;
+}
+.app-header h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  color: var(--farbe-akzent);
+  letter-spacing: 0.02em;
+}
+.datenschutz-hinweis {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: var(--farbe-text-gedaempft);
+}
+
+/* ---------- Hauptbereich und Karten ---------- */
+.app-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 3rem;
+}
+.karte {
+  background: var(--farbe-karte);
+  border: 1px solid var(--farbe-rahmen);
+  border-radius: 6px;
+  padding: 1.3rem 1.6rem;
+  margin-bottom: 1.5rem;
+}
+.karte h2 {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+  color: var(--farbe-akzent);
+  border-bottom: 1px solid var(--farbe-rahmen);
+  padding-bottom: 0.5rem;
+}
+.karte h3 { font-size: 1.05rem; margin: 1rem 0 0.6rem; }
+
+/* Einstellungen: einklappbarer Bereich */
+details.karte summary {
+  cursor: pointer;
+  list-style-position: outside;
+}
+details.karte summary h2 {
+  display: inline-block;
+  margin: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* ---------- Formulare ---------- */
+.zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+.feld {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  flex: 1;
+}
+.feld-breit { flex: 2; min-width: 260px; }
+.feld-knopf { justify-content: flex-end; }
+
+label {
+  font-size: 0.9rem;
+  font-weight: bold;
+  margin-bottom: 0.3rem;
+}
+
+input, select, textarea {
+  font: inherit;
+  color: var(--farbe-text);
+  background: #fff;
+  border: 1px solid var(--farbe-rahmen);
+  border-radius: 4px;
+  padding: 0.6rem 0.7rem;
+  font-size: 1.05rem;
+}
+input:focus, select:focus, textarea:focus {
+  outline: 3px solid #b7c6d9;
+  border-color: var(--farbe-akzent);
+}
+input[readonly] { background: var(--farbe-akzent-hell); }
+textarea { resize: vertical; }
+
+.feld-hinweis {
+  font-size: 0.85rem;
+  color: var(--farbe-text-gedaempft);
+  margin-top: 0.3rem;
+}
+.hinweis {
+  font-size: 0.95rem;
+  color: var(--farbe-text-gedaempft);
+}
+
+.unterformular {
+  margin-top: 1rem;
+  padding: 1rem 1.2rem;
+  background: var(--farbe-akzent-hell);
+  border: 1px solid var(--farbe-rahmen);
+  border-radius: 6px;
+}
+
+/* ---------- Schaltflächen ---------- */
+.knopf-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+.knopf {
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.65rem 1.2rem;
+  border: 1px solid var(--farbe-akzent);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--farbe-akzent);
+  cursor: pointer;
+}
+.knopf:hover { background: var(--farbe-akzent-hell); }
+.knopf-haupt {
+  background: var(--farbe-akzent);
+  color: #fff;
+}
+.knopf-haupt:hover { background: #21395a; }
+.knopf-gross {
+  font-size: 1.15rem;
+  padding: 0.9rem 1.8rem;
+  font-weight: bold;
+}
+.knopf-klein { font-size: 0.85rem; padding: 0.35rem 0.7rem; margin-top: 0.4rem; }
+.knopf-gefahr {
+  border-color: var(--farbe-gefahr);
+  color: var(--farbe-gefahr);
+}
+.knopf-gefahr:hover { background: var(--farbe-fehler-hintergrund); }
+
+/* ---------- Live-Berechnung ---------- */
+.berechnungs-anzeige {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  background: var(--farbe-akzent-hell);
+  border: 1px solid var(--farbe-rahmen);
+  border-radius: 6px;
+  padding: 0.8rem 1.2rem;
+  margin: 0.8rem 0;
+  font-size: 1.05rem;
+}
+.berechnungs-anzeige span { color: var(--farbe-text-gedaempft); }
+.berechnungs-anzeige strong { margin-left: 0.3rem; }
+
+/* ---------- Fehlermeldungen ---------- */
+.fehlermeldung {
+  background: var(--farbe-fehler-hintergrund);
+  border: 1px solid var(--farbe-gefahr);
+  color: var(--farbe-gefahr);
+  border-radius: 4px;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+}
+
+/* ---------- Tabelle ---------- */
+.tabellen-container { overflow-x: auto; }
+.taetigkeiten-tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+.taetigkeiten-tabelle th, .taetigkeiten-tabelle td {
+  border: 1px solid var(--farbe-rahmen);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+.taetigkeiten-tabelle th {
+  background: var(--farbe-akzent-hell);
+  color: var(--farbe-akzent);
+  white-space: nowrap;
+}
+.taetigkeiten-tabelle td.zahl { text-align: right; white-space: nowrap; }
+/* Nebenspalten etwas zurückhaltender darstellen, damit die Hauptspalten hervorstechen */
+.taetigkeiten-tabelle .spalte-neben { color: var(--farbe-text-gedaempft); font-size: 0.88rem; }
+.taetigkeiten-tabelle td.spalte-betrag { font-weight: bold; }
+.spalte-taetigkeit { min-width: 220px; }
+.sortier-knopf {
+  font: inherit;
+  font-weight: bold;
+  color: var(--farbe-akzent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.tabellen-aktion {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid var(--farbe-akzent);
+  background: #fff;
+  color: var(--farbe-akzent);
+  cursor: pointer;
+}
+.tabellen-aktion:hover { background: var(--farbe-akzent-hell); }
+.tabellen-aktion-loeschen { border-color: var(--farbe-gefahr); color: var(--farbe-gefahr); }
+.tabellen-aktion-loeschen:hover { background: var(--farbe-fehler-hintergrund); }
+
+/* ---------- Zusammenfassung ---------- */
+.summen-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.summen-karte {
+  background: var(--farbe-akzent-hell);
+  border: 1px solid var(--farbe-rahmen);
+  border-radius: 6px;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+}
+.summen-karte span { color: var(--farbe-text-gedaempft); font-size: 0.9rem; }
+.summen-karte strong { font-size: 1.35rem; margin-top: 0.25rem; }
+.summen-karte-brutto { background: var(--farbe-akzent); }
+.summen-karte-brutto span { color: #dfe6ee; }
+.summen-karte-brutto strong { color: #fff; }
+
+/* ---------- Tätigkeitsnachweis (Vorschau am Bildschirm) ---------- */
+.nachweis {
+  background: #fff;
+  color: #1c2430;
+  max-width: 21cm;             /* DIN A4-Breite */
+  margin: 0 auto 3rem;
+  padding: 2cm 2cm 1.5cm;
+  border: 1px solid var(--farbe-rahmen);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  font-size: 11pt;
+}
+.nachweis-kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid var(--farbe-akzent);
+  padding-bottom: 0.6cm;
+  margin-bottom: 0.6cm;
+}
+.nachweis-kanzlei-name {
+  font-size: 16pt;
+  font-weight: bold;
+  color: var(--farbe-akzent);
+}
+.nachweis-kanzlei-daten { font-size: 9pt; color: #444; margin-top: 0.15cm; }
+.nachweis-logo { max-height: 2.2cm; max-width: 6cm; }
+.nachweis h1 {
+  font-size: 14pt;
+  margin: 0 0 0.4cm;
+  color: var(--farbe-akzent);
+}
+.nachweis-angaben {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.6cm;
+  font-size: 10pt;
+}
+.nachweis-angaben td { padding: 0.08cm 0.3cm 0.08cm 0; vertical-align: top; }
+.nachweis-angaben td:first-child { font-weight: bold; width: 5.5cm; }
+.nachweis-tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  margin-bottom: 0.6cm;
+}
+.nachweis-tabelle th, .nachweis-tabelle td {
+  border: 1px solid #999;
+  padding: 0.15cm 0.2cm;
+  text-align: left;
+  vertical-align: top;
+}
+.nachweis-tabelle th { background: #eef2f7; }
+.nachweis-tabelle td.zahl, .nachweis-tabelle th.zahl { text-align: right; white-space: nowrap; }
+.nachweis-summen {
+  width: 55%;
+  margin-left: 45%;
+  border-collapse: collapse;
+  font-size: 10pt;
+}
+.nachweis-summen td { padding: 0.1cm 0.2cm; border-bottom: 1px solid #ccc; }
+.nachweis-summen td:last-child { text-align: right; white-space: nowrap; }
+.nachweis-summen tr.nachweis-gesamtzeit td {
+  font-weight: bold;
+  border-top: 2px solid var(--farbe-akzent);
+  border-bottom: 2px solid var(--farbe-akzent);
+}
+.nachweis-tabelle .spalte-datum { width: 2.4cm; }
+.nachweis-unterschrift {
+  display: flex;
+  gap: 2cm;
+  margin-top: 1.8cm;
+  font-size: 9pt;
+  color: #444;
+}
+.nachweis-unterschrift > div { flex: 1; }
+.unterschrift-linie {
+  border-bottom: 1px solid #444;
+  height: 1cm;
+  margin-bottom: 0.15cm;
+}
+.nachweis-fuss {
+  margin-top: 1cm;
+  padding-top: 0.3cm;
+  border-top: 1px solid #999;
+  font-size: 9pt;
+  color: #444;
+}
+
+/* ---------- Anmeldemaske (Passwortschutz) ---------- */
+.anmeldung {
+  position: fixed;
+  inset: 0;
+  background: var(--farbe-hintergrund);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+.anmeldung-karte {
+  background: var(--farbe-karte);
+  border: 1px solid var(--farbe-rahmen);
+  border-top: 4px solid var(--farbe-akzent);
+  border-radius: 6px;
+  padding: 2rem 2.2rem;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+.anmeldung-karte h1 {
+  font-size: 1.25rem;
+  color: var(--farbe-akzent);
+  margin: 0 0 0.3rem;
+}
+.anmeldung-karte p { color: var(--farbe-text-gedaempft); font-size: 0.95rem; margin-top: 0; }
+.anmeldung-karte input {
+  width: 100%;
+  margin: 0.8rem 0;
+  text-align: center;
+  font-size: 1.15rem;
+}
+.anmeldung-karte .knopf { width: 100%; }
+.anmeldung-karte .fehlermeldung { margin-top: 0.8rem; text-align: left; }
+/* Solange die Anmeldung aktiv ist, bleibt die Anwendung verborgen */
+body.gesperrt .app-header,
+body.gesperrt .app-main,
+body.gesperrt .nachweis { display: none; }
+
+/* ---------- Druckansicht: nur der Tätigkeitsnachweis wird gedruckt ---------- */
+@media print {
+  @page { size: A4; margin: 1.5cm; }
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .nachweis {
+    display: block !important;
+    border: none;
+    box-shadow: none;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    font-size: 10.5pt;
+  }
+  .nachweis[hidden] { display: none !important; }
+  .nachweis-tabelle tr { page-break-inside: avoid; }
+}
+
+/* ---------- Anpassung für Tablets ---------- */
+@media (max-width: 900px) {
+  .app-main { padding: 1rem; }
+  .zeile { flex-direction: column; gap: 0.6rem; }
+  .feld { min-width: 0; }
+  .knopf-gross { width: 100%; }
+}

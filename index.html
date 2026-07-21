@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanzlei Doehring – Zeiterfassung und Tätigkeitsnachweis</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="gesperrt">
+
+  <!-- ================= Anmeldemaske (Passwortschutz) ================= -->
+  <div id="anmeldung" class="anmeldung no-print">
+    <div class="anmeldung-karte">
+      <h1>Kanzlei Doehring</h1>
+      <p>Zeiterfassung und Tätigkeitsnachweis</p>
+      <label for="anmeldung-passwort">Bitte geben Sie das Passwort ein</label>
+      <input type="password" id="anmeldung-passwort" autocomplete="current-password">
+      <button type="button" class="knopf knopf-haupt knopf-gross" id="knopf-anmelden">Anmelden</button>
+      <p class="fehlermeldung" id="anmeldung-fehler" hidden></p>
+    </div>
+  </div>
+
+  <!-- ================= Kopfbereich ================= -->
+  <header class="app-header no-print">
+    <h1>Kanzlei Doehring – Zeiterfassung und Tätigkeitsnachweis</h1>
+    <p class="datenschutz-hinweis">
+      Die Daten werden in dieser Version ausschließlich lokal auf diesem Gerät gespeichert.
+    </p>
+  </header>
+
+  <main class="app-main no-print">
+
+    <!-- ================= Bereich 1: Mandant auswählen ================= -->
+    <section class="karte" id="bereich-mandant">
+      <h2>1. Mandant auswählen</h2>
+
+      <div class="zeile">
+        <div class="feld feld-breit">
+          <label for="mandant-suche">Mandant suchen (PR-Nr. oder Name)</label>
+          <input type="text" id="mandant-suche" placeholder="z. B. PR-2026-001 oder Mustermann">
+        </div>
+        <div class="feld feld-breit">
+          <label for="mandant-auswahl">Mandant</label>
+          <select id="mandant-auswahl"></select>
+        </div>
+      </div>
+
+      <div class="knopf-zeile">
+        <button type="button" class="knopf knopf-haupt" id="knopf-neuer-mandant">Neuen Mandanten anlegen</button>
+        <button type="button" class="knopf" id="knopf-mandant-bearbeiten">Ausgewählten Mandanten bearbeiten</button>
+        <button type="button" class="knopf knopf-gefahr" id="knopf-mandant-loeschen">Ausgewählten Mandanten löschen</button>
+      </div>
+
+      <!-- Formular zum Anlegen / Bearbeiten eines Mandanten (standardmäßig ausgeblendet) -->
+      <div id="mandant-formular" class="unterformular" hidden>
+        <h3 id="mandant-formular-titel">Neuen Mandanten anlegen</h3>
+        <div class="zeile">
+          <div class="feld">
+            <label for="mandant-prnr">PR-Nr. (Aktennummer) *</label>
+            <input type="text" id="mandant-prnr" placeholder="z. B. PR-2026-002">
+          </div>
+          <div class="feld feld-breit">
+            <label for="mandant-name">Name des Mandanten *</label>
+            <input type="text" id="mandant-name" placeholder="z. B. Erika Beispiel GmbH">
+          </div>
+        </div>
+        <div class="zeile">
+          <div class="feld feld-breit">
+            <label for="mandant-anschrift">Anschrift (optional)</label>
+            <input type="text" id="mandant-anschrift" placeholder="Straße, PLZ Ort">
+          </div>
+          <div class="feld">
+            <label for="mandant-ansprechpartner">Ansprechpartner (optional)</label>
+            <input type="text" id="mandant-ansprechpartner">
+          </div>
+        </div>
+        <div class="zeile">
+          <div class="feld feld-breit">
+            <label for="mandant-bemerkung">Interne Bemerkung (optional)</label>
+            <input type="text" id="mandant-bemerkung">
+          </div>
+        </div>
+        <p class="fehlermeldung" id="mandant-fehler" hidden></p>
+        <div class="knopf-zeile">
+          <button type="button" class="knopf knopf-haupt" id="knopf-mandant-speichern">Mandanten speichern</button>
+          <button type="button" class="knopf" id="knopf-mandant-abbrechen">Abbrechen</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Bereich 2: Tätigkeit erfassen ================= -->
+    <section class="karte" id="bereich-erfassung">
+      <h2>2. Tätigkeit erfassen</h2>
+      <p class="hinweis" id="erfassung-mandant-anzeige">Bitte wählen Sie zuerst oben einen Mandanten aus.</p>
+
+      <div class="zeile">
+        <div class="feld">
+          <label for="eintrag-datum">Datum</label>
+          <input type="date" id="eintrag-datum">
+        </div>
+      </div>
+
+      <div class="zeile">
+        <div class="feld feld-breit">
+          <label for="eintrag-taetigkeit">Tätigkeit (z. B. Telefonat mit Mandant, Prüfung der Vertragsunterlagen, Erstellung eines Schriftsatzes)</label>
+          <textarea id="eintrag-taetigkeit" rows="3" placeholder="Beschreibung der Tätigkeit"></textarea>
+        </div>
+      </div>
+
+      <div class="zeile">
+        <div class="feld">
+          <label for="eintrag-beginn">Beginn (Uhrzeit)</label>
+          <input type="time" id="eintrag-beginn">
+        </div>
+        <div class="feld">
+          <label for="eintrag-ende">Ende (Uhrzeit)</label>
+          <input type="time" id="eintrag-ende">
+        </div>
+        <div class="feld">
+          <label for="eintrag-minuten">Minuten</label>
+          <input type="number" id="eintrag-minuten" min="1" step="1" placeholder="z. B. 30">
+          <span class="feld-hinweis" id="minuten-hinweis" hidden>Wird aus Beginn und Ende berechnet.</span>
+        </div>
+      </div>
+
+      <p class="feld-hinweis">Sie können entweder Beginn und Ende eintragen – die Minuten werden dann automatisch berechnet – oder die Minuten direkt eingeben.</p>
+
+      <!-- Sofortige Anzeige der berechneten Beträge -->
+      <div class="berechnungs-anzeige" id="live-berechnung">
+        <div><span>Dauer:</span> <strong id="live-dauer">–</strong></div>
+        <div><span>Betrag netto:</span> <strong id="live-netto">–</strong></div>
+        <div><span>Mehrwertsteuer:</span> <strong id="live-mwst">–</strong></div>
+        <div><span>Betrag brutto:</span> <strong id="live-brutto">–</strong></div>
+      </div>
+
+      <p class="fehlermeldung" id="eintrag-fehler" hidden></p>
+
+      <div class="knopf-zeile">
+        <button type="button" class="knopf knopf-haupt knopf-gross" id="knopf-eintrag-speichern">Tätigkeit speichern</button>
+        <button type="button" class="knopf" id="knopf-eintrag-abbrechen" hidden>Bearbeitung abbrechen</button>
+      </div>
+    </section>
+
+    <!-- ================= Bereich 3: Tätigkeiten (Filter + Tabelle) ================= -->
+    <section class="karte" id="bereich-liste">
+      <h2>3. Erfasste Tätigkeiten</h2>
+
+      <div class="zeile filter-zeile">
+        <div class="feld">
+          <label for="filter-mandant">Filter: Mandant</label>
+          <select id="filter-mandant"></select>
+        </div>
+        <div class="feld">
+          <label for="filter-von">Zeitraum von</label>
+          <input type="date" id="filter-von">
+        </div>
+        <div class="feld">
+          <label for="filter-bis">Zeitraum bis</label>
+          <input type="date" id="filter-bis">
+        </div>
+        <div class="feld">
+          <label for="filter-monat">Monat</label>
+          <select id="filter-monat"></select>
+        </div>
+        <div class="feld">
+          <label for="filter-jahr">Jahr</label>
+          <select id="filter-jahr"></select>
+        </div>
+        <div class="feld feld-knopf">
+          <button type="button" class="knopf" id="knopf-filter-zuruecksetzen">Filter zurücksetzen</button>
+        </div>
+      </div>
+
+      <div class="tabellen-container">
+        <table class="taetigkeiten-tabelle" id="taetigkeiten-tabelle">
+          <thead>
+            <tr>
+              <th>PR-Nr.</th>
+              <th>Name</th>
+              <th>
+                <button type="button" class="sortier-knopf" id="knopf-sortierung" title="Nach Datum sortieren">Datum <span id="sortier-pfeil">▼</span></button>
+              </th>
+              <th class="spalte-taetigkeit">Tätigkeit</th>
+              <th>Beginn</th>
+              <th>Ende</th>
+              <th>Minuten</th>
+              <th class="spalte-neben">Stundensatz netto</th>
+              <th>Betrag netto</th>
+              <th class="spalte-neben">MwSt.</th>
+              <th class="spalte-neben">Betrag brutto</th>
+              <th>Bearbeiten</th>
+              <th>Löschen</th>
+            </tr>
+          </thead>
+          <tbody id="taetigkeiten-tbody"></tbody>
+        </table>
+      </div>
+      <p class="hinweis" id="tabelle-leer-hinweis" hidden>Für die aktuelle Auswahl sind keine Tätigkeiten vorhanden.</p>
+    </section>
+
+    <!-- ================= Bereich 4: Zusammenfassung ================= -->
+    <section class="karte" id="bereich-summen">
+      <h2>4. Zusammenfassung (bezogen auf die aktuellen Filter)</h2>
+      <div class="summen-raster">
+        <div class="summen-karte"><span>Gesamtzeit</span><strong id="summe-zeit">–</strong></div>
+        <div class="summen-karte"><span>Gesamtbetrag netto</span><strong id="summe-netto">–</strong></div>
+        <div class="summen-karte"><span>Mehrwertsteuer</span><strong id="summe-mwst">–</strong></div>
+        <div class="summen-karte summen-karte-brutto"><span>Gesamtbetrag brutto</span><strong id="summe-brutto">–</strong></div>
+      </div>
+    </section>
+
+    <!-- ================= Bereich 5: Ausgabe ================= -->
+    <section class="karte" id="bereich-ausgabe">
+      <h2>5. Tätigkeitsnachweis und Datenexport</h2>
+      <p class="hinweis">Der Tätigkeitsnachweis enthält die Tätigkeiten der aktuellen Filterauswahl. Bitte wählen Sie dafür oben im Filter einen Mandanten aus.</p>
+      <div class="knopf-zeile">
+        <button type="button" class="knopf knopf-haupt knopf-gross" id="knopf-nachweis-anzeigen">Tätigkeitsnachweis anzeigen</button>
+        <button type="button" class="knopf knopf-haupt knopf-gross" id="knopf-pdf">Als PDF speichern</button>
+        <button type="button" class="knopf knopf-haupt knopf-gross" id="knopf-drucken">Drucken</button>
+      </div>
+      <div class="knopf-zeile">
+        <button type="button" class="knopf" id="knopf-excel">Excel-Datei exportieren</button>
+        <button type="button" class="knopf" id="knopf-sicherung">Datensicherung erstellen</button>
+        <button type="button" class="knopf" id="knopf-wiederherstellen">Datensicherung wiederherstellen</button>
+        <input type="file" id="datei-wiederherstellen" accept=".json,application/json" hidden>
+      </div>
+      <p class="fehlermeldung" id="ausgabe-fehler" hidden></p>
+
+      <!-- Vorschau des Tätigkeitsnachweises (wird per Knopf eingeblendet) -->
+      <div id="nachweis-vorschau-rahmen" hidden>
+        <h3>Vorschau des Tätigkeitsnachweises</h3>
+        <p class="hinweis">So wird der Nachweis gedruckt bzw. als PDF gespeichert. Über „Als PDF speichern“ öffnet sich das Druckfenster – wählen Sie dort als Ziel „Als PDF speichern“.</p>
+      </div>
+    </section>
+
+    <!-- ================= Bereich 6: Einstellungen (eingeklappt) ================= -->
+    <details class="karte" id="bereich-einstellungen">
+      <summary><h2>6. Einstellungen (Stundensatz, Mehrwertsteuer, Kanzleidaten)</h2></summary>
+      <div class="zeile">
+        <div class="feld">
+          <label for="einstellung-stundensatz">Stundensatz netto (Euro pro Stunde)</label>
+          <input type="number" id="einstellung-stundensatz" min="0" step="0.01">
+        </div>
+        <div class="feld">
+          <label for="einstellung-mwst">Mehrwertsteuersatz (Prozent)</label>
+          <input type="number" id="einstellung-mwst" min="0" step="0.1">
+        </div>
+      </div>
+      <p class="hinweis">Änderungen gelten für neue Einträge. Bereits gespeicherte Einträge behalten ihren Stundensatz.</p>
+      <div class="knopf-zeile">
+        <button type="button" class="knopf" id="knopf-neu-berechnen">Bestehende Einträge mit aktuellem Stundensatz neu berechnen</button>
+      </div>
+      <hr>
+      <div class="zeile">
+        <div class="feld feld-breit">
+          <label for="einstellung-kanzleiname">Kanzleiname</label>
+          <input type="text" id="einstellung-kanzleiname">
+        </div>
+        <div class="feld feld-breit">
+          <label for="einstellung-anschrift">Kanzleianschrift (optional)</label>
+          <input type="text" id="einstellung-anschrift">
+        </div>
+      </div>
+      <div class="zeile">
+        <div class="feld">
+          <label for="einstellung-telefon">Telefonnummer (optional)</label>
+          <input type="text" id="einstellung-telefon">
+        </div>
+        <div class="feld">
+          <label for="einstellung-email">E-Mail-Adresse (optional)</label>
+          <input type="text" id="einstellung-email">
+        </div>
+        <div class="feld">
+          <label for="einstellung-logo">Logo hochladen (optional)</label>
+          <input type="file" id="einstellung-logo" accept="image/*">
+          <button type="button" class="knopf knopf-klein" id="knopf-logo-entfernen" hidden>Logo entfernen</button>
+        </div>
+      </div>
+      <hr>
+      <h3>Passwort ändern</h3>
+      <div class="zeile">
+        <div class="feld">
+          <label for="passwort-aktuell">Aktuelles Passwort</label>
+          <input type="password" id="passwort-aktuell" autocomplete="current-password">
+        </div>
+        <div class="feld">
+          <label for="passwort-neu">Neues Passwort (mindestens 6 Zeichen)</label>
+          <input type="password" id="passwort-neu" autocomplete="new-password">
+        </div>
+        <div class="feld">
+          <label for="passwort-neu-wiederholung">Neues Passwort wiederholen</label>
+          <input type="password" id="passwort-neu-wiederholung" autocomplete="new-password">
+        </div>
+        <div class="feld feld-knopf">
+          <button type="button" class="knopf" id="knopf-passwort-aendern">Passwort ändern</button>
+        </div>
+      </div>
+      <p class="fehlermeldung" id="passwort-fehler" hidden></p>
+      <p class="hinweis">Hinweis: Der Passwortschutz verhindert den zufälligen Zugriff auf die Oberfläche in diesem Browser. Die Daten selbst bleiben lokal auf diesem Gerät gespeichert.</p>
+    </details>
+
+  </main>
+
+  <!-- ================= Tätigkeitsnachweis (Druck- und Vorschaubereich) ================= -->
+  <section id="nachweis" class="nachweis" hidden></section>
+
+  <script src="app.js"></script>
+</body>
+</html>
