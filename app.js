@@ -10,7 +10,9 @@
      6. Tätigkeitsnachweis, Druck und PDF (Bereich 5)
      7. Excel-/CSV-Export, Datensicherung (Bereich 5)
      8. Einstellungen (Bereich 6)
-   Alle Daten bleiben ausschließlich lokal im Browser (localStorage).
+   Die Daten werden je Benutzerkonto in einer europäischen Datenbank
+   (Supabase, Frankfurt) gespeichert; der localStorage dient nur noch
+   als Zwischenspeicher für einen schnellen Start.
    ===================================================================== */
 
 'use strict';
@@ -50,30 +52,39 @@ let ui = {
   filter: { mandantId: '', von: '', bis: '', monat: '', jahr: '' }
 };
 
-function datenSpeichern() {
-  localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify({
+function datenAlsObjekt() {
+  return {
     einstellungen: daten.einstellungen,
     mandanten: daten.mandanten,
     eintraege: daten.eintraege,
     zuletztGewaehlterMandantId: ui.gewaehlterMandantId
-  }));
+  };
 }
 
-function datenLaden() {
+// Speichert den gesamten Datenbestand: sofort im lokalen Zwischenspeicher
+// und zeitversetzt in der Cloud-Datenbank (siehe Abschnitt 9)
+function datenSpeichern() {
+  localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify(datenAlsObjekt()));
+  serverSpeichernPlanen();
+}
+
+// Übernimmt einen geladenen Datenbestand (vom Server oder aus dem Cache)
+function datenUebernehmen(geladen) {
+  daten.einstellungen = Object.assign(standardEinstellungen(), geladen.einstellungen || {});
+  daten.mandanten = Array.isArray(geladen.mandanten) ? geladen.mandanten : [];
+  daten.eintraege = Array.isArray(geladen.eintraege) ? geladen.eintraege : [];
+  ui.gewaehlterMandantId = geladen.zuletztGewaehlterMandantId || '';
+}
+
+// Lädt den lokalen Zwischenspeicher; liefert true, wenn Daten vorhanden waren
+function datenAusCacheLaden() {
   const roh = localStorage.getItem(SPEICHER_SCHLUESSEL);
-  if (!roh) {
-    beispieldatenAnlegen();
-    return;
-  }
+  if (!roh) return false;
   try {
-    const geladen = JSON.parse(roh);
-    daten.einstellungen = Object.assign(standardEinstellungen(), geladen.einstellungen || {});
-    daten.mandanten = Array.isArray(geladen.mandanten) ? geladen.mandanten : [];
-    daten.eintraege = Array.isArray(geladen.eintraege) ? geladen.eintraege : [];
-    ui.gewaehlterMandantId = geladen.zuletztGewaehlterMandantId || '';
+    datenUebernehmen(JSON.parse(roh));
+    return daten.mandanten.length > 0 || daten.eintraege.length > 0;
   } catch (fehler) {
-    // Beschädigte Daten: mit Beispieldaten neu beginnen, ohne technische Meldung
-    beispieldatenAnlegen();
+    return false;
   }
 }
 
@@ -941,100 +952,359 @@ function logoHochladen(datei) {
 }
 
 /* =====================================================================
-   9. Passwortschutz
+   9. Cloud-Speicher und Anmeldung (Supabase, EU-Server Frankfurt)
    ---------------------------------------------------------------------
-   Das Passwort wird nicht im Klartext gespeichert, sondern nur als
-   SHA-256-Prüfsumme. Standardpasswort beim ersten Start: "Doehring2026"
-   (bitte nach der ersten Anmeldung in den Einstellungen ändern).
-   Hinweis: Dieser Schutz sichert die Oberfläche gegen zufälligen
-   Zugriff; die Daten liegen weiterhin nur lokal in diesem Browser.
+   Anmeldung mit E-Mail und Passwort. Alle Daten werden je Benutzer
+   in einer europäischen Datenbank gespeichert, damit von allen
+   Geräten gearbeitet werden kann. Ein Versionszähler verhindert,
+   dass sich zwei Geräte unbemerkt gegenseitig überschreiben.
    ===================================================================== */
 
-const PASSWORT_SCHLUESSEL = 'kanzlei-doehring-passwort';
-const STANDARD_PASSWORT = 'Doehring2026';
+const SUPABASE_URL = 'https://sdzqqhypkqgaiuyujhkz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_9kR1AXtsd6-Dqa5OnM_p_g_W4vf-68f';
+const SITZUNG_SCHLUESSEL = 'kanzlei-doehring-sitzung';
 
-// SHA-256-Prüfsumme eines Textes als Hexadezimal-Zeichenkette
-async function passwortPruefsumme(text) {
-  const datenBytes = new TextEncoder().encode(text);
-  const hashBytes = await crypto.subtle.digest('SHA-256', datenBytes);
-  return Array.from(new Uint8Array(hashBytes))
-    .map(function (b) { return b.toString(16).padStart(2, '0'); })
-    .join('');
-}
+let sitzung = null;              // aktuelle Anmeldesitzung (Zugriffs-Token)
+let serverVersion = 0;           // Version des zuletzt geladenen Server-Stands
+let speicherTimer = null;        // zeitversetztes Speichern
+let speichernAusstehend = false; // gibt es noch nicht übertragene Änderungen?
 
-async function gespeichertePruefsumme() {
-  let gespeichert = localStorage.getItem(PASSWORT_SCHLUESSEL);
-  if (!gespeichert) {
-    gespeichert = await passwortPruefsumme(STANDARD_PASSWORT);
-    localStorage.setItem(PASSWORT_SCHLUESSEL, gespeichert);
+function sitzungLaden() {
+  try {
+    sitzung = JSON.parse(localStorage.getItem(SITZUNG_SCHLUESSEL));
+  } catch (fehler) {
+    sitzung = null;
   }
-  return gespeichert;
 }
+
+function sitzungMerken() {
+  if (sitzung) localStorage.setItem(SITZUNG_SCHLUESSEL, JSON.stringify(sitzung));
+  else localStorage.removeItem(SITZUNG_SCHLUESSEL);
+}
+
+// Anfrage an den Server; bei abgelaufenem Token wird die Sitzung einmal
+// automatisch erneuert und die Anfrage wiederholt
+async function cloudAnfrage(pfad, methode, koerper, zusatzKopf) {
+  async function ausfuehren() {
+    const kopf = Object.assign({
+      'apikey': SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    }, zusatzKopf || {});
+    if (sitzung) kopf['Authorization'] = 'Bearer ' + sitzung.access_token;
+    return fetch(SUPABASE_URL + pfad, {
+      method: methode,
+      headers: kopf,
+      body: koerper === undefined ? undefined : JSON.stringify(koerper)
+    });
+  }
+  let antwort = await ausfuehren();
+  if (antwort.status === 401 && sitzung && sitzung.refresh_token) {
+    const erneuert = await cloudTokenErneuern();
+    if (erneuert) antwort = await ausfuehren();
+  }
+  return antwort;
+}
+
+async function cloudAnmelden(email, passwort) {
+  try {
+    const antwort = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: passwort })
+    });
+    const inhalt = await antwort.json().catch(function () { return {}; });
+    if (!antwort.ok) {
+      const code = String(inhalt.error_code || inhalt.msg || inhalt.error_description || '').toLowerCase();
+      let meldung = 'Die Anmeldung ist fehlgeschlagen. Bitte versuchen Sie es erneut.';
+      if (code.includes('invalid')) meldung = 'E-Mail-Adresse oder Passwort ist nicht richtig.';
+      if (code.includes('confirm')) meldung = 'Dieser Zugang ist noch nicht bestätigt. Bitte wenden Sie sich an die Kanzlei.';
+      return { ok: false, meldung: meldung };
+    }
+    sitzung = { access_token: inhalt.access_token, refresh_token: inhalt.refresh_token };
+    sitzungMerken();
+    return { ok: true };
+  } catch (fehler) {
+    return { ok: false, meldung: 'Keine Verbindung zum Server. Bitte prüfen Sie Ihre Internetverbindung.' };
+  }
+}
+
+async function cloudTokenErneuern() {
+  if (!sitzung || !sitzung.refresh_token) return false;
+  try {
+    const antwort = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: sitzung.refresh_token })
+    });
+    if (!antwort.ok) {
+      sitzung = null;
+      sitzungMerken();
+      return false;
+    }
+    const neu = await antwort.json();
+    sitzung = { access_token: neu.access_token, refresh_token: neu.refresh_token };
+    sitzungMerken();
+    return true;
+  } catch (fehler) {
+    return false;
+  }
+}
+
+async function abmelden() {
+  if (speichernAusstehend) {
+    await serverSpeichernJetzt();
+    if (speichernAusstehend &&
+        !confirm('Es gibt noch nicht gespeicherte Änderungen. Möchten Sie sich trotzdem abmelden?')) {
+      return;
+    }
+  }
+  try { await cloudAnfrage('/auth/v1/logout', 'POST', {}); } catch (fehler) { /* unkritisch */ }
+  sitzung = null;
+  sitzungMerken();
+  localStorage.removeItem(SPEICHER_SCHLUESSEL);
+  location.reload();
+}
+
+/* ---------- Daten laden und speichern (Server) ---------- */
+
+// Liest den Datenbestand des angemeldeten Benutzers; null = noch keiner vorhanden
+async function serverDatenLaden() {
+  const antwort = await cloudAnfrage('/rest/v1/speicher?select=daten,version', 'GET');
+  if (!antwort.ok) throw new Error('Laden fehlgeschlagen (' + antwort.status + ')');
+  const zeilen = await antwort.json();
+  if (zeilen.length === 0) {
+    serverVersion = 0;
+    return null;
+  }
+  serverVersion = Number(zeilen[0].version);
+  return zeilen[0].daten;
+}
+
+// Schreibt den Datenbestand; 'konflikt' bedeutet: ein anderes Gerät hat
+// zwischenzeitlich gespeichert (Versionszähler stimmt nicht mehr)
+async function serverDatenSchreiben() {
+  const inhalt = datenAlsObjekt();
+  if (serverVersion === 0) {
+    const antwort = await cloudAnfrage('/rest/v1/speicher', 'POST',
+      { daten: inhalt, version: 1 }, { 'Prefer': 'return=representation' });
+    if (antwort.ok) { serverVersion = 1; return 'ok'; }
+    if (antwort.status === 409) return 'konflikt';
+    return 'fehler';
+  }
+  const neueVersion = serverVersion + 1;
+  const antwort = await cloudAnfrage(
+    '/rest/v1/speicher?version=eq.' + serverVersion, 'PATCH',
+    { daten: inhalt, version: neueVersion, aktualisiert_am: new Date().toISOString() },
+    { 'Prefer': 'return=representation' });
+  if (!antwort.ok) return 'fehler';
+  const zeilen = await antwort.json();
+  if (zeilen.length === 0) return 'konflikt';
+  serverVersion = neueVersion;
+  return 'ok';
+}
+
+function statusAnzeigen(text, istWarnung) {
+  const status = el('sync-status');
+  status.textContent = text;
+  status.classList.toggle('sync-status-warnung', !!istWarnung);
+}
+
+// Speichern zeitversetzt anstoßen (bündelt schnell aufeinanderfolgende Änderungen)
+function serverSpeichernPlanen() {
+  if (!sitzung) return;
+  speichernAusstehend = true;
+  statusAnzeigen('Speichern…');
+  clearTimeout(speicherTimer);
+  speicherTimer = setTimeout(serverSpeichernJetzt, 800);
+}
+
+async function serverSpeichernJetzt() {
+  if (!sitzung) return;
+  clearTimeout(speicherTimer);
+  let ergebnis;
+  try {
+    ergebnis = await serverDatenSchreiben();
+  } catch (fehler) {
+    ergebnis = 'fehler';
+  }
+  if (ergebnis === 'ok') {
+    speichernAusstehend = false;
+    statusAnzeigen('Alle Änderungen gespeichert');
+  } else if (ergebnis === 'konflikt') {
+    await serverKonfliktAufloesen();
+  } else {
+    // Keine Verbindung: Hinweis zeigen und später automatisch erneut versuchen
+    statusAnzeigen('Nicht gespeichert – bitte Internetverbindung prüfen', true);
+    speicherTimer = setTimeout(serverSpeichernJetzt, 15000);
+  }
+}
+
+// Ein anderes Gerät hat zwischenzeitlich gespeichert: Server-Stand übernehmen
+async function serverKonfliktAufloesen() {
+  try {
+    const serverDaten = await serverDatenLaden();
+    if (serverDaten) {
+      datenUebernehmen(serverDaten);
+      localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify(datenAlsObjekt()));
+      einstellungenAnzeigen();
+      allesAktualisieren();
+    }
+    speichernAusstehend = false;
+    statusAnzeigen('Auf anderem Gerät geändert – Stand neu geladen', true);
+    alert('Die Daten wurden zwischenzeitlich auf einem anderen Gerät geändert. Der aktuelle Stand wurde neu geladen. Bitte prüfen Sie Ihre letzte Eingabe.');
+  } catch (fehler) {
+    statusAnzeigen('Nicht gespeichert – bitte Internetverbindung prüfen', true);
+  }
+}
+
+// Beim Zurückkehren in den Tab prüfen, ob ein anderes Gerät neuere Daten hat
+async function serverAktualitaetPruefen() {
+  if (!sitzung || speichernAusstehend) return;
+  try {
+    const antwort = await cloudAnfrage('/rest/v1/speicher?select=version', 'GET');
+    if (!antwort.ok) return;
+    const zeilen = await antwort.json();
+    if (zeilen.length > 0 && Number(zeilen[0].version) > serverVersion) {
+      const serverDaten = await serverDatenLaden();
+      if (serverDaten) {
+        datenUebernehmen(serverDaten);
+        localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify(datenAlsObjekt()));
+        einstellungenAnzeigen();
+        allesAktualisieren();
+        statusAnzeigen('Neuester Stand geladen');
+      }
+    }
+  } catch (fehler) {
+    // Offline: nichts tun, beim nächsten Speichern erscheint ein Hinweis
+  }
+}
+
+/* ---------- Anmeldeablauf ---------- */
 
 function anwendungFreigeben() {
   document.body.classList.remove('gesperrt');
   el('anmeldung').hidden = true;
+  el('knopf-abmelden').hidden = false;
 }
 
-async function anmelden() {
-  // Versehentliche Leerzeichen (z. B. durch Autovervollständigung) ignorieren
-  const eingabe = el('anmeldung-passwort').value.trim();
+async function anmeldungAbsenden() {
+  const email = el('anmeldung-email').value.trim();
+  const passwort = el('anmeldung-passwort').value;
   const fehlerFeld = el('anmeldung-fehler');
-  const pruefsumme = await passwortPruefsumme(eingabe);
-  if (pruefsumme === await gespeichertePruefsumme()) {
-    // Anmeldung gilt für die laufende Browser-Sitzung
-    sessionStorage.setItem('kanzlei-doehring-angemeldet', 'ja');
-    el('anmeldung-passwort').value = '';
-    fehlerFeld.hidden = true;
-    anwendungFreigeben();
-  } else {
-    fehlerFeld.textContent = 'Das Passwort ist leider nicht richtig. Bitte versuchen Sie es erneut.';
+
+  if (!email || !passwort) {
+    fehlerFeld.textContent = 'Bitte geben Sie E-Mail-Adresse und Passwort ein.';
     fehlerFeld.hidden = false;
-    el('anmeldung-passwort').select();
+    return;
   }
+
+  const knopf = el('knopf-anmelden');
+  knopf.disabled = true;
+  knopf.textContent = 'Anmeldung läuft…';
+  const ergebnis = await cloudAnmelden(email, passwort);
+  knopf.disabled = false;
+  knopf.textContent = 'Anmelden';
+
+  if (!ergebnis.ok) {
+    fehlerFeld.textContent = ergebnis.meldung;
+    fehlerFeld.hidden = false;
+    return;
+  }
+  el('anmeldung-passwort').value = '';
+  fehlerFeld.hidden = true;
+  await nachAnmeldung();
 }
 
+// Nach erfolgreicher Anmeldung: Daten vom Server laden.
+// Beim allerersten Mal werden vorhandene lokale Daten übernommen,
+// sonst wird mit dem Beispielmandanten begonnen.
+async function nachAnmeldung() {
+  let serverDaten = null;
+  try {
+    serverDaten = await serverDatenLaden();
+  } catch (fehler) {
+    const fehlerFeld = el('anmeldung-fehler');
+    fehlerFeld.textContent = 'Die Daten konnten nicht geladen werden. Bitte prüfen Sie Ihre Internetverbindung. Falls das Problem bestehen bleibt, wurde die Datenbank möglicherweise noch nicht eingerichtet.';
+    fehlerFeld.hidden = false;
+    return;
+  }
+  if (serverDaten) {
+    datenUebernehmen(serverDaten);
+    localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify(datenAlsObjekt()));
+  } else {
+    if (!datenAusCacheLaden()) beispieldatenAnlegen();
+    await serverSpeichernJetzt();
+  }
+  anwendungFreigeben();
+  einstellungenAnzeigen();
+  erfassungZuruecksetzen();
+  allesAktualisieren();
+  if (!speichernAusstehend) statusAnzeigen('Alle Änderungen gespeichert');
+}
+
+// Passwort des eigenen Zugangs ändern (gilt danach auf allen Geräten)
 async function passwortAendern() {
-  const aktuell = el('passwort-aktuell').value;
   const neu = el('passwort-neu').value;
   const wiederholung = el('passwort-neu-wiederholung').value;
   const fehlerFeld = el('passwort-fehler');
 
   let fehler = '';
-  if (await passwortPruefsumme(aktuell) !== await gespeichertePruefsumme()) {
-    fehler = 'Das aktuelle Passwort ist nicht richtig.';
-  } else if (neu.length < 6) {
+  if (neu.length < 6) {
     fehler = 'Das neue Passwort muss mindestens 6 Zeichen lang sein.';
   } else if (neu !== wiederholung) {
     fehler = 'Die Wiederholung stimmt nicht mit dem neuen Passwort überein.';
   }
-
   if (fehler) {
     fehlerFeld.textContent = fehler;
     fehlerFeld.hidden = false;
     return;
   }
 
-  localStorage.setItem(PASSWORT_SCHLUESSEL, await passwortPruefsumme(neu));
-  el('passwort-aktuell').value = '';
+  const antwort = await cloudAnfrage('/auth/v1/user', 'PUT', { password: neu });
+  if (!antwort.ok) {
+    fehlerFeld.textContent = 'Das Passwort konnte nicht geändert werden. Bitte versuchen Sie es später erneut.';
+    fehlerFeld.hidden = false;
+    return;
+  }
   el('passwort-neu').value = '';
   el('passwort-neu-wiederholung').value = '';
   fehlerFeld.hidden = true;
   alert('Das Passwort wurde erfolgreich geändert.');
 }
 
-function passwortschutzStarten() {
+function anmeldungStarten() {
   // Formular-Absenden deckt Klick auf "Anmelden" und die Eingabetaste ab
   el('anmeldung-formular').addEventListener('submit', function (ereignis) {
     ereignis.preventDefault();
-    anmelden();
+    anmeldungAbsenden();
   });
+  el('knopf-abmelden').addEventListener('click', abmelden);
   el('knopf-passwort-aendern').addEventListener('click', passwortAendern);
 
-  if (sessionStorage.getItem('kanzlei-doehring-angemeldet') === 'ja') {
-    anwendungFreigeben();
+  // Beim Zurückkehren in den Tab: neueren Stand anderer Geräte übernehmen
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') serverAktualitaetPruefen();
+  });
+  // Vor dem Schließen warnen, wenn noch nicht alles gespeichert ist
+  window.addEventListener('beforeunload', function (ereignis) {
+    if (speichernAusstehend) {
+      ereignis.preventDefault();
+      ereignis.returnValue = '';
+    }
+  });
+
+  // Nicht mehr benötigter Speicher der früheren Passwort-Version
+  localStorage.removeItem('kanzlei-doehring-passwort');
+
+  // Bestehende Sitzung fortsetzen, sonst Anmeldemaske zeigen
+  sitzungLaden();
+  if (sitzung) {
+    cloudTokenErneuern().then(function (erneuert) {
+      if (erneuert) nachAnmeldung();
+      else el('anmeldung-email').focus();
+    });
   } else {
-    el('anmeldung-passwort').focus();
+    el('anmeldung-email').focus();
   }
 }
 
@@ -1124,10 +1394,11 @@ function ereignisseVerbinden() {
   });
 }
 
-// Start der Anwendung
-datenLaden();
+// Start der Anwendung: zuerst den lokalen Zwischenspeicher anzeigen,
+// dann anmelden und den aktuellen Stand vom Server laden
+datenAusCacheLaden();
 ereignisseVerbinden();
-passwortschutzStarten();
 einstellungenAnzeigen();
 erfassungZuruecksetzen();
 allesAktualisieren();
+anmeldungStarten();

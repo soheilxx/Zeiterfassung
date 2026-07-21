@@ -18,20 +18,15 @@ Es ist keine Installation nötig.
 Alternativ kann der Ordner unverändert auf einen normalen Webserver gelegt
 werden.
 
-## Passwort
+## Anmeldung
 
-Die Anwendung ist mit einem Passwort geschützt.
+Die Anwendung ist durch einen persönlichen Zugang geschützt
+(E-Mail-Adresse und Passwort). Zugänge werden von der Kanzlei im
+Supabase-Dashboard angelegt – siehe `EINRICHTUNG-SUPABASE.md`.
 
-- **Standardpasswort beim ersten Start: `Doehring2026`**
-- Bitte das Passwort nach der ersten Anmeldung unten im Bereich
-  „Einstellungen“ unter „Passwort ändern“ ändern.
-- Die Anmeldung gilt für die laufende Browser-Sitzung; nach dem Schließen
-  des Browsers wird das Passwort erneut abgefragt.
-
-Hinweis: Der Passwortschutz verhindert den zufälligen Zugriff auf die
-Oberfläche. Die Mandantendaten selbst liegen ausschließlich lokal im
-Browser des jeweiligen Geräts – sie werden nicht ins Internet übertragen,
-auch wenn die Anwendung über eine Internetadresse aufgerufen wird.
+- Die Anmeldung bleibt auf dem Gerät bestehen, bis „Abmelden" gedrückt wird.
+- Das Passwort kann in der Anwendung unter „Einstellungen" →
+  „Passwort ändern" geändert werden und gilt dann auf allen Geräten.
 
 ## Bedienung in Kürze
 
@@ -59,13 +54,18 @@ auch wenn die Anwendung über eine Internetadresse aufgerufen wird.
 
 ## Datenspeicherung und Datenschutz
 
-Alle Daten werden ausschließlich lokal im Browser dieses Geräts gespeichert
-(localStorage). Es werden keine Daten an externe Dienste übertragen; es gibt
-keine Tracking- oder Analysedienste.
+Die Daten werden verschlüsselt übertragen und je Benutzerkonto in einer
+europäischen Datenbank gespeichert (Supabase, Serverstandort Frankfurt).
+Dadurch kann von allen Geräten und Standorten mit demselben Datenbestand
+gearbeitet werden. Es gibt keine Tracking- oder Analysedienste.
 
-**Wichtig:** Die Daten sind an den verwendeten Browser auf diesem Gerät
-gebunden. Bitte regelmäßig über „Datensicherung erstellen“ eine
-Sicherungsdatei speichern.
+- Jeder Zugang sieht ausschließlich die eigenen Daten
+  (Zugriffsregeln direkt in der Datenbank).
+- Für die Nutzung ist eine Internetverbindung erforderlich.
+- Wird auf zwei Geräten gleichzeitig gearbeitet, erkennt die Anwendung
+  Überschneidungen und lädt den neuesten Stand nach – mit Hinweis.
+- Zusätzlich empfiehlt sich weiterhin gelegentlich „Datensicherung
+  erstellen" als unabhängige Sicherungsdatei.
 
 ## Dateien
 

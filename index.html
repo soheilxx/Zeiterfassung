@@ -14,20 +14,31 @@
       <h1>Kanzlei Doehring</h1>
       <p>Zeiterfassung und Tätigkeitsnachweis</p>
       <form id="anmeldung-formular">
-        <label for="anmeldung-passwort">Bitte geben Sie das Passwort ein</label>
+        <label for="anmeldung-email">E-Mail-Adresse</label>
+        <input type="email" id="anmeldung-email" autocomplete="username">
+        <label for="anmeldung-passwort">Passwort</label>
         <input type="password" id="anmeldung-passwort" autocomplete="current-password">
         <button type="submit" class="knopf knopf-haupt knopf-gross" id="knopf-anmelden">Anmelden</button>
       </form>
       <p class="fehlermeldung" id="anmeldung-fehler" hidden></p>
+      <p class="hinweis">Ihr Zugang wird von der Kanzlei eingerichtet. Die Daten liegen verschlüsselt in einer europäischen Datenbank (Frankfurt).</p>
     </div>
   </div>
 
   <!-- ================= Kopfbereich ================= -->
   <header class="app-header no-print">
-    <h1>Kanzlei Doehring – Zeiterfassung und Tätigkeitsnachweis</h1>
-    <p class="datenschutz-hinweis">
-      Die Daten werden in dieser Version ausschließlich lokal auf diesem Gerät gespeichert.
-    </p>
+    <div class="kopf-zeile">
+      <div>
+        <h1>Kanzlei Doehring – Zeiterfassung und Tätigkeitsnachweis</h1>
+        <p class="datenschutz-hinweis">
+          Die Daten werden verschlüsselt übertragen und sicher in einer europäischen Datenbank (Frankfurt) gespeichert.
+        </p>
+      </div>
+      <div class="kopf-rechts">
+        <span id="sync-status" class="sync-status"></span>
+        <button type="button" class="knopf knopf-klein" id="knopf-abmelden" hidden>Abmelden</button>
+      </div>
+    </div>
   </header>
 
   <main class="app-main no-print">
@@ -282,10 +293,6 @@
       <h3>Passwort ändern</h3>
       <div class="zeile">
         <div class="feld">
-          <label for="passwort-aktuell">Aktuelles Passwort</label>
-          <input type="password" id="passwort-aktuell" autocomplete="current-password">
-        </div>
-        <div class="feld">
           <label for="passwort-neu">Neues Passwort (mindestens 6 Zeichen)</label>
           <input type="password" id="passwort-neu" autocomplete="new-password">
         </div>
@@ -298,7 +305,7 @@
         </div>
       </div>
       <p class="fehlermeldung" id="passwort-fehler" hidden></p>
-      <p class="hinweis">Hinweis: Der Passwortschutz verhindert den zufälligen Zugriff auf die Oberfläche in diesem Browser. Die Daten selbst bleiben lokal auf diesem Gerät gespeichert.</p>
+      <p class="hinweis">Das neue Passwort gilt für Ihren Zugang auf allen Geräten.</p>
     </details>
 
   </main>

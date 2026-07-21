@@ -48,6 +48,27 @@ body {
   font-size: 0.85rem;
   color: var(--farbe-text-gedaempft);
 }
+.kopf-zeile {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.kopf-rechts {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.kopf-rechts .knopf-klein { margin-top: 0; }
+.sync-status {
+  font-size: 0.85rem;
+  color: var(--farbe-text-gedaempft);
+}
+.sync-status-warnung {
+  color: var(--farbe-gefahr);
+  font-weight: bold;
+}
 
 /* ---------- Hauptbereich und Karten ---------- */
 .app-main {
@@ -380,10 +401,14 @@ textarea { resize: vertical; }
   margin: 0 0 0.3rem;
 }
 .anmeldung-karte p { color: var(--farbe-text-gedaempft); font-size: 0.95rem; margin-top: 0; }
+.anmeldung-karte label {
+  display: block;
+  text-align: left;
+  margin-top: 0.6rem;
+}
 .anmeldung-karte input {
   width: 100%;
-  margin: 0.8rem 0;
-  text-align: center;
+  margin: 0.4rem 0 0.8rem;
   font-size: 1.15rem;
 }
 .anmeldung-karte .knopf { width: 100%; }
